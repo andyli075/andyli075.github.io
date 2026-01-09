@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code 雲端紀錄器</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; }
+        #reader { width: 100%; max-width: 500px; margin: auto; border: 1px solid #ccc; }
+        #result { margin-top: 20px; color: green; font-weight: bold; }
+        .input-group { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
+        input { padding: 10px; width: 60%; }
+        button { padding: 10px 20px; cursor: pointer; background: #4285f4; color: white; border: none; }
+    </style>
+</head>
+<body>
+
+    <h2>QR Code 掃描器 🔍</h2>
+    <div id="reader"></div>
+    <div id="result">準備就緒...</div>
+
+    <div class="input-group">
+        <h3>手動輸入備案 ⌨️</h3>
+        <input type="text" id="manualInput" placeholder="請輸入條碼內容">
+        <button onclick="handleManualSubmit()">儲存</button>
+    </div>
+
+    <script>
+        const scriptUrl = "你的_APPS_SCRIPT_網址"; // 💡 請換成你的網址
+        let lastResult = ""; 
+
+        function sendToGoogleSheet(text) {
+            document.getElementById('result').innerText = "傳送中: " + text + "...";
+            fetch(scriptUrl, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: text })
+            }).then(() => {
+                document.getElementById('result').innerText = "✅ 成功存入：" + text;
+                lastResult = text; // 更新最後掃描紀錄
+            }).catch(err => {
+                document.getElementById('result').innerText = "❌ 失敗：" + err;
+            });
+        }
+
+        function onScanSuccess(decodedText) {
+            if (decodedText !== lastResult) {
+                sendToGoogleSheet(decodedText);
+            }
+        }
+
+        function handleManualSubmit() {
+            const val = document.getElementById('manualInput').value;
+            if (val) {
+                sendToGoogleSheet(val);
+                document.getElementById('manualInput').value = "";
+            }
+        }
+
+        // 啟動掃描 🚀
+        const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        html5QrcodeScanner.render(onScanSuccess);
+    </script>
+</body>
+</html>
